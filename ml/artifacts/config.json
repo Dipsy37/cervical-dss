@@ -1,0 +1,70 @@
+{
+  "model_version": "xgb-v1.0-2026-10-12",
+  "trained_on": "2026-10-12",
+  "features": [
+    "age",
+    "num_sexual_partners",
+    "age_first_intercourse",
+    "num_pregnancies",
+    "smokes",
+    "smokes_years",
+    "hormonal_contraceptives",
+    "hormonal_contraceptives_years",
+    "iud",
+    "iud_years",
+    "stds",
+    "stds_number"
+  ],
+  "feature_labels": {
+    "age": "Age",
+    "num_sexual_partners": "Number of sexual partners",
+    "age_first_intercourse": "Age at first sexual intercourse",
+    "num_pregnancies": "Number of pregnancies",
+    "smokes": "Smoking",
+    "smokes_years": "Years of smoking",
+    "hormonal_contraceptives": "Use of hormonal contraceptives",
+    "hormonal_contraceptives_years": "Years of hormonal contraceptive use",
+    "iud": "Has an IUD",
+    "iud_years": "Years with an IUD",
+    "stds": "History of a sexually transmitted infection",
+    "stds_number": "Number of sexually transmitted infections"
+  },
+  "target": "Biopsy",
+  "thresholds": {
+    "t1": 0.2843,
+    "t2": 0.5948
+  },
+  "referral_messages": {
+    "LOW": "Low risk. Encourage routine cervical cancer screening at the nearest health facility as per national guidelines (every 5 years for women aged 25-49).",
+    "MODERATE": "Moderate risk. Refer for cervical cancer screening at the nearest health facility within 3 months.",
+    "HIGH": "High risk. Refer for cervical cancer screening as soon as possible (within 30 days) at the nearest health facility."
+  },
+  "top_k_factors": 3,
+  "training_records": 686,
+  "imbalance_method": "class weighting (scale_pos_weight)",
+  "test_metrics_default_threshold": {
+    "CV AUC (train)": 0.574,
+    "AUC-ROC": 0.643,
+    "Sensitivity (recall)": 0.636,
+    "Specificity": 0.708,
+    "Precision": 0.13,
+    "F1-score": 0.215,
+    "Accuracy": 0.703,
+    "TP": 7.0,
+    "FN": 4.0,
+    "FP": 47.0,
+    "TN": 114.0
+  },
+  "test_metrics_referral_threshold_t1": {
+    "AUC-ROC": 0.6434,
+    "Sensitivity (recall)": 0.9091,
+    "Specificity": 0.0932,
+    "Precision": 0.0641,
+    "F1-score": 0.1198,
+    "Accuracy": 0.1453,
+    "TP": 10.0,
+    "FN": 1.0,
+    "FP": 146.0,
+    "TN": 15.0
+  }
+}
