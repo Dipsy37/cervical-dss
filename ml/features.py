@@ -4,8 +4,7 @@ Single source of truth for the model's input features.
 The same 12 names are used in:
   - the CHW input form (frontend)
   - the RiskAssessment class / `assessments` table (backend)
-  - the trained model (this folder)
-If you change this list, retrain the model and update the form and database.
+  - the trained model
 """
 
 # Mapping: UCI column name  ->  name used everywhere in the system
