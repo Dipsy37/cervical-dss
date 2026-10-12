@@ -1,0 +1,4 @@
+Model,Test AUC,Test AUC 95% CI,Repeated CV AUC mean,Repeated CV AUC SD
+XGBoost,0.643,0.413 - 0.866,0.608,0.095
+Random Forest,0.653,0.412 - 0.864,0.61,0.096
+Logistic Regression,0.577,0.367 - 0.771,0.561,0.129
