@@ -20,7 +20,7 @@ from pathlib import Path
 import joblib
 import matplotlib
 
-matplotlib.use("Agg")  # save figures to file (works without a screen)
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -47,7 +47,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-ML_DIR = Path(__file__).resolve().parent
+try:
+    ML_DIR = Path(__file__).resolve().parent
+except NameError:
+    ML_DIR = Path.cwd() if (Path.cwd() / "features.py").exists() else Path.cwd() / "ml"
 sys.path.insert(0, str(ML_DIR))
 from features import DIAGNOSIS_COLUMNS, FEATURE_MAP, FEATURES, PLAIN_LABELS, TARGET, TEST_RESULT_COLUMNS  # noqa: E402
 
@@ -87,7 +90,7 @@ missing = [c for c in list(FEATURE_MAP) + [TARGET] if c not in raw.columns]
 if missing:
     sys.exit(f"These expected columns are missing from the CSV: {missing}")
 
-# %% 2. Feature selection  (document every column's role for Chapter 4)
+# %% 2. Feature selection
 roles = []
 for col in raw.columns:
     if col == TARGET:
@@ -107,7 +110,7 @@ X = raw[list(FEATURE_MAP)].rename(columns=FEATURE_MAP).astype(float)
 y = raw[TARGET].astype(int)
 print(f"Positive (Biopsy = 1): {y.sum()} of {len(y)} ({y.mean():.1%})")
 
-# %% 3. Stratified train/test split - the test set is locked away until step 7
+# %% 3. Stratified train/test split
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=TEST_SIZE, stratify=y, random_state=RANDOM_STATE)
 print(f"Train: {len(X_train)} ({y_train.sum()} positive) | Test: {len(X_test)} ({y_test.sum()} positive)")
@@ -173,7 +176,7 @@ for name, (clf, grid) in candidates.items():
     print(f"{name:20s} best CV AUC = {search.best_score_:.3f}  params = {params}")
 
 
-# %% 7. Evaluate on the test set (used once)
+# %% 7. Evaluate on the test set
 def evaluate(y_true, prob, threshold):
     pred = (prob >= threshold).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_true, pred, labels=[0, 1]).ravel()
@@ -321,3 +324,4 @@ config = {
 (ARTIFACTS / "config.json").write_text(json.dumps(config, indent=2))
 print(f"\nSaved model files to {ARTIFACTS}")
 print(f"Saved report tables and figures to {REPORTS}")
+
