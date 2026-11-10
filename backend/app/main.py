@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from .config import FRONTEND_DIR, MODEL_DIR
-from .routers import auth, dashboard, users
+from .routers import auth, clients, dashboard, users
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app = FastAPI(
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(clients.router)
 app.include_router(dashboard.router)
 
 
