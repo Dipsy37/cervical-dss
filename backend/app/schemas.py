@@ -61,3 +61,10 @@ class UserOut(BaseModel):
     chu_name: str | None
     is_active: bool
     last_login: datetime | None
+
+class ClientOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    client_id: int
+    client_code: str
+    chu_name: str
+    created_at: datetime
