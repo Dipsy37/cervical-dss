@@ -68,3 +68,10 @@ def chw(client, admin_token):
 @pytest.fixture(scope="session")
 def other_chw(client, admin_token):
     return create_chw(client, admin_token, "Peter Otieno", "0723456789", chu="Kisumu Central")
+
+
+VALID_ANSWERS = {
+    "consent_obtained": True, "age": 34, "num_sexual_partners": 3, "age_first_intercourse": 17,
+    "num_pregnancies": 4, "smokes": False, "smokes_years": None, "hormonal_contraceptives": True,
+    "hormonal_contraceptives_years": 3, "iud": False, "iud_years": None, "stds": True, "stds_number": 1,
+}
