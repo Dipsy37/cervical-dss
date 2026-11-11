@@ -19,17 +19,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from .config import FRONTEND_DIR, MODEL_DIR
+from .ml.inference import MLModule
 from .routers import auth, clients, dashboard, users
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    config_file = MODEL_DIR / "config.json"
-    if not config_file.exists():
-        raise FileNotFoundError(f"{config_file} not found. Train the model first: python ml/train_model.py")
-    app.state.ml = SimpleNamespace(config=json.loads(config_file.read_text()))
-    yield
-
+    # The trained model, preprocessor and SHAP explainer are loaded ONCE here (inference only).
+    app.state.ml = MLModule(MODEL_DIR)
+    yield    
 
 app = FastAPI(
     title="Cervical Cancer Risk Decision Support System",
