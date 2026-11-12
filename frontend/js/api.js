@@ -56,7 +56,7 @@ function homeFor(role) { return role === "ADMIN" ? "dashboard.html" : "chw.html"
 function renderNav(active) {
   const links = Session.role === "ADMIN"
     ? [["dashboard.html", "Dashboard"], ["admin.html", "CHW Accounts"]]
-    : [["chw.html", "Dashboard"]];   // New Assessment and History are added in the next prototype
+    : [["chw.html", "Dashboard"], ["assess.html", "New Assessment"]];
   links.push(["change-password.html", "Change Password"]);
   const bar = document.createElement("header");
   bar.className = "topbar";
