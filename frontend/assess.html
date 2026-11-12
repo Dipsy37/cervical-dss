@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Assessment - Cervical Cancer Risk Assessment</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <!-- STEP 1: client and consent -->
+  <section id="step1" class="card">
+    <h1>Step 1 of 2: Client</h1>
+    <p class="muted">Search for a returning client by code, or register a new client.</p>
+    <div id="msg1" class="hidden"></div>
+    <label for="code">Client code</label>
+    <div class="row">
+      <input id="code" type="text" placeholder="e.g. CL-00042" autocapitalize="characters">
+      <button id="search" type="button" class="secondary">Search</button>
+    </div>
+    <p class="muted" style="margin:.75rem 0">or</p>
+    <button id="newClient" type="button" class="secondary">Register New Client</button>
+    <div id="clientFound" class="alert ok hidden"></div>
+    <label class="check" style="margin-top:1rem">
+      <input id="consent" type="checkbox">
+      <span>The client has given verbal consent to answer the questions and for her answers to be recorded.</span>
+    </label>
+    <div class="actions"><button id="continue" type="button" disabled>Continue</button></div>
+  </section>
+
+  <!-- STEP 2: risk factors -->
+  <section id="step2" class="card hidden">
+    <h1>Step 2 of 2: Risk Factors</h1>
+    <p class="muted">Client <strong id="codeShown"></strong>. If the client does not wish to answer a question,
+      tick <em>Declined</em>.</p>
+    <form id="form" novalidate></form>
+    <div id="msg2" class="hidden"></div>
+    <div class="actions">
+      <button id="back" type="button" class="secondary">Back</button>
+      <button id="submit" type="button">Assess Risk</button>
+    </div>
+  </section>
+</main>
+<script src="js/api.js"></script>
+<script>
+if (requireLogin("CHW")) {
+  renderNav("assess.html");
+
+  // Question definitions - names match the 12 model features exactly
+  const QUESTIONS = [
+    { name: "age", text: "Age (years)", type: "number", min: 13, max: 100 },
+    { name: "num_sexual_partners", text: "Number of sexual partners (lifetime)", type: "number", min: 0, max: 50 },
+    { name: "age_first_intercourse", text: "Age at first sexual intercourse", type: "number", min: 8, max: 60 },
+    { name: "num_pregnancies", text: "Number of pregnancies", type: "number", min: 0, max: 20 },
+    { name: "smokes", text: "Does she smoke (or has she smoked)?", type: "yesno",
+      follow: { name: "smokes_years", text: "For how many years?", min: 0, max: 80, step: "0.5" } },
+    { name: "hormonal_contraceptives", text: "Has she used hormonal contraceptives (pill, injection, implant)?", type: "yesno",
+      follow: { name: "hormonal_contraceptives_years", text: "For how many years in total?", min: 0, max: 40, step: "0.5" } },
+    { name: "iud", text: "Has she had an IUD (coil)?", type: "yesno",
+      follow: { name: "iud_years", text: "For how many years in total?", min: 0, max: 40, step: "0.5" } },
+    { name: "stds", text: "Has she ever had a sexually transmitted infection?", type: "yesno",
+      follow: { name: "stds_number", text: "How many different infections?", min: 0, max: 20, step: "1" } },
+  ];
+
+  const form = document.getElementById("form");
+  function numberInput(name, min, max, step = "1") {
+    const i = document.createElement("input");
+    Object.assign(i, { type: "number", id: name, name, min, max, step, inputMode: "decimal" });
+    return i;
+  }
+  function declinedBox(name, onChange) {
+    const l = document.createElement("label");
+    l.className = "declined";
+    l.innerHTML = `<input type="checkbox" data-declined="${name}"> Declined`;
+    l.querySelector("input").addEventListener("change", onChange);
+    return l;
+  }
+  for (const q of QUESTIONS) {
+    const wrap = document.createElement("div");
+    wrap.className = "question";
+    wrap.innerHTML = `<div class="q"></div><div class="answer"></div>`;
+    wrap.querySelector(".q").textContent = q.text;
+    const ans = wrap.querySelector(".answer");
+    if (q.type === "number") {
+      const inp = numberInput(q.name, q.min, q.max);
+      ans.append(inp, declinedBox(q.name, e => { inp.disabled = e.target.checked; if (e.target.checked) inp.value = ""; }));
+    } else {
+      for (const [v, t] of [["false", "No"], ["true", "Yes"]]) {
+        const l = document.createElement("label");
+        l.innerHTML = `<input type="radio" name="${q.name}" value="${v}"> ${t}`;
+        ans.appendChild(l);
+      }
+      const follow = document.createElement("div");
+      follow.className = "answer hidden";
+      follow.style.marginTop = ".5rem";
+      const fl = document.createElement("span"); fl.textContent = q.follow.text;
+      const finp = numberInput(q.follow.name, q.follow.min, q.follow.max, q.follow.step);
+      follow.append(fl, finp);
+      const radios = ans.querySelectorAll("input[type=radio]");
+      radios.forEach(r => r.addEventListener("change", () => {
+        follow.classList.toggle("hidden", r.value !== "true" || !r.checked);
+        if (r.value === "false" && r.checked) finp.value = "";
+      }));
+      ans.appendChild(declinedBox(q.name, e => {
+        radios.forEach(r => { r.disabled = e.target.checked; if (e.target.checked) r.checked = false; });
+        follow.classList.add("hidden"); finp.value = "";
+      }));
+      wrap.appendChild(follow);
+    }
+    form.appendChild(wrap);
+  }
+
+  // ---------- Step 1 ----------
+  let clientCode = null;
+  const msg1 = document.getElementById("msg1"), found = document.getElementById("clientFound");
+  const consent = document.getElementById("consent"), cont = document.getElementById("continue");
+  const updateContinue = () => { cont.disabled = !(clientCode && consent.checked); };
+  consent.addEventListener("change", updateContinue);
+
+  function setClient(c, isNew) {
+    clientCode = c.client_code;
+    msg1.classList.add("hidden");
+    found.textContent = isNew
+      ? `New client registered: ${c.client_code}. Write this code in your household register next to the client's name.`
+      : `Client ${c.client_code} found.`;
+    found.classList.remove("hidden");
+    updateContinue();
+  }
+  document.getElementById("search").onclick = async () => {
+    const code = document.getElementById("code").value.trim().toUpperCase();
+    if (!code) return showMessage(msg1, "Enter a client code first.");
+    try { setClient(await api("GET", `/api/clients/${encodeURIComponent(code)}`), false); }
+    catch (err) { clientCode = null; found.classList.add("hidden"); showMessage(msg1, err.message); updateContinue(); }
+  };
+  document.getElementById("newClient").onclick = async (e) => {
+    e.target.disabled = true;
+    try { const c = await api("POST", "/api/clients"); document.getElementById("code").value = c.client_code; setClient(c, true); }
+    catch (err) { showMessage(msg1, err.message); }
+    finally { e.target.disabled = false; }
+  };
+  cont.onclick = () => {
+    document.getElementById("codeShown").textContent = clientCode;
+    document.getElementById("step1").classList.add("hidden");
+    document.getElementById("step2").classList.remove("hidden");
+    window.scrollTo(0, 0);
+  };
+  document.getElementById("back").onclick = () => {
+    document.getElementById("step2").classList.add("hidden");
+    document.getElementById("step1").classList.remove("hidden");
+  };
+
+  // ---------- Step 2: collect answers and submit ----------
+  function collect() {
+    const body = { client_code: clientCode, consent_obtained: consent.checked };
+    const missing = [];
+    for (const q of QUESTIONS) {
+      const declined = form.querySelector(`[data-declined="${q.name}"]`).checked;
+      if (q.type === "number") {
+        const v = document.getElementById(q.name).value;
+        body[q.name] = declined || v === "" ? null : Number(v);
+        if (!declined && v === "") missing.push(q.text);
+      } else {
+        const r = form.querySelector(`input[name="${q.name}"]:checked`);
+        body[q.name] = declined || !r ? null : r.value === "true";
+        if (!declined && !r) missing.push(q.text);
+        const fv = document.getElementById(q.follow.name).value;
+        body[q.follow.name] = body[q.name] === true && fv !== "" ? Number(fv) : (body[q.name] === false ? 0 : null);
+      }
+    }
+    return { body, missing };
+  }
+  const msg2 = document.getElementById("msg2");
+  document.getElementById("submit").onclick = async (e) => {
+    const { body, missing } = collect();
+    if (missing.length) return showMessage(msg2, "Please answer or tick Declined for:\n- " + missing.join("\n- "));
+    msg2.classList.add("hidden");
+    e.target.disabled = true; e.target.textContent = "Assessing...";
+    try {
+      const result = await api("POST", "/api/assessments", body);
+      location.href = `result.html?id=${result.assessment_id}`;
+    } catch (err) { showMessage(msg2, err.message); }
+    finally { e.target.disabled = false; e.target.textContent = "Assess Risk"; }
+  };
+}
+</script>
+<style>#msg2, #msg1 { white-space: pre-line; }</style>
+</body>
+</html>
