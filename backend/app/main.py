@@ -13,12 +13,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from .config import FRONTEND_DIR, MODEL_DIR
+from .crypto import get_fernet
 from .ml.inference import MLModule
 from .routers import assessments, auth, clients, dashboard, users
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    get_fernet()   # stop at start-up, with a clear message, if ENCRYPTION_KEY is missing or invalid
     # The trained model, preprocessor and SHAP explainer are loaded ONCE here (inference only).
     app.state.ml = MLModule(MODEL_DIR)
     yield
