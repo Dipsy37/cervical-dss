@@ -127,6 +127,62 @@ class ClientOut(BaseModel):
     has_date_of_birth: bool = False        # False = registered before DOB was recorded
 
 
+class ClientUpdateIn(BaseModel):
+    """UC12 Update Client Details (registering CHW only). Send only the fields that change.
+    An empty text removes that detail. Name, phone and village still need identity consent."""
+    date_of_birth: date | None = None
+    estimated_age: int | None = Field(None, ge=MIN_CLIENT_AGE, le=MAX_CLIENT_AGE)
+    identity_consent: bool | None = None
+    full_name: str | None = Field(None, min_length=2, max_length=100)
+    phone: str | None = Field(None, pattern=KENYAN_MOBILE)
+    village: str | None = Field(None, min_length=2, max_length=100)
+
+    @field_validator("full_name", "village", "phone", mode="before")
+    @classmethod
+    def blank_to_none(cls, v):
+        if isinstance(v, str):
+            v = " ".join(v.split())
+            return v or None
+        return v
+
+    @model_validator(mode="after")
+    def check_rules(self):
+        if self.date_of_birth is not None and self.estimated_age is not None:
+            raise ValueError("Give either the date of birth or an approximate age, not both.")
+        if self.date_of_birth is not None:
+            today = date.today()
+            if self.date_of_birth > today:
+                raise ValueError("Date of birth cannot be in the future.")
+            age = age_on(self.date_of_birth, today)
+            if age < MIN_CLIENT_AGE:
+                raise ValueError(f"The client must be {MIN_CLIENT_AGE} years or older (she is {age}).")
+            if age > MAX_CLIENT_AGE:
+                raise ValueError("Please check the date of birth (age over 100).")
+        return self
+
+
+class ClientSummaryOut(BaseModel):
+    """One row of the Clients list."""
+    client_code: str
+    display_name: str | None = None
+    name_masked: bool = False
+    age: int | None = None
+    dob_estimated: bool | None = None
+    chu_name: str
+    registered_at: datetime
+    visits: int = 0
+    last_assessed_at: datetime | None = None
+    last_risk_level: str | None = None
+    details_removed: bool = False
+
+
+class AccessLogOut(BaseModel):
+    accessed_at: datetime
+    user_name: str
+    action: str
+    detail: str | None = None
+
+
 # ---------- assessments ----------
 class AssessmentIn(BaseModel):
     """11 of the 12 risk factors. Age is NOT entered: it is calculated from the client's date
@@ -199,3 +255,12 @@ class AssessmentSummaryOut(BaseModel):
     chu_name: str
     risk_level: str
     probability: float
+
+class ClientRecordOut(BaseModel):
+    """UC11 View Client Record: who she is (as the viewer may see it) and every visit.
+    The access log is included for the Administrator only."""
+    client: ClientOut
+    registered_by: str
+    details_removed_at: datetime | None = None
+    visits: list[AssessmentSummaryOut]
+    access_log: list[AccessLogOut] | None = None

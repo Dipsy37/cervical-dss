@@ -19,16 +19,16 @@ cervical-dss/
 │   │   ├── main.py           FastAPI app
 │   │   ├── config.py         settings from backend/.env
 │   │   ├── database.py       PostgreSQL connection (SQLAlchemy)
-│   │   ├── models.py         all 5 tables (users, clients, assessments, predictions, explanation_factors)
+│   │   ├── models.py         all tables (users, clients, client_identities, identity_access_log, assessments, predictions, explanation_factors)
 │   │   ├── schemas.py        request validation (Pydantic)
 │   │   ├── security.py       bcrypt passwords, JWT login, role checks
 │   │   ├── crypto.py         encryption of client personal details (name, phone, village, date of birth)
-│   │   ├── services/         assessment_service.py (risk assessment), client_service.py (registration, who sees names)
+│   │   ├── services/         assessment_service.py (risk assessment), client_service.py (registration, client records, who sees names)
 │   │   └── routers/          auth.py (login), users.py (CHW accounts), dashboard.py
 │   ├── init_db.py            creates the tables + first Administrator
 │   ├── migrate_client_identity.py   upgrades a database created before client names / dates of birth
-│   └── tests/                33 automated tests
-├── frontend/                 login, set password, admin dashboard, CHW accounts, CHW dashboard
+│   └── tests/                40 automated tests
+├── frontend/                 login, set password, dashboards, CHW accounts, assessment, results, history, clients
 ├── database/schema.sql       the database schema as SQL
 └── requirements.txt
 
@@ -77,6 +77,7 @@ Database created **before** client names and dates of birth were added? Upgrade 
 ```
 python migrate_client_identity.py
 ```
+Then run `python init_db.py` once more: it adds any new tables (such as `identity_access_log`) and keeps all data.
 
 ## 4. Run
 
@@ -90,8 +91,9 @@ API documentation: http://localhost:8000/docs
 
 ## 5. Test
 
-From `backend/` (after training): `pytest -v` → 33 tests: login, forced password change, CHW account
+From `backend/` (after training): `pytest -v` → 40 tests: login, forced password change, CHW account
 management, client registration (date of birth, 18+ rule, identity consent, encryption, who sees names),
+client records (list, search, visit history, updating and removing details, access log),
 risk assessment inputs, age from date of birth, access control, dashboard and the installable app (PWA).
 
 ## 6. Git
@@ -124,7 +126,8 @@ Installing needs the site to be served over **HTTPS** (or `localhost` on the sam
 To try it on a phone during development, use an HTTPS tunnel such as `ngrok http 8000`, or deploy the app.
 
 What the service worker (`frontend/sw.js`) does:
-- Saves the app's own pages, CSS, JavaScript and icons so screens open quickly on a slow network.
+- Loads pages, CSS and JavaScript from the server first whenever there is a connection, so updates reach every phone at once.
+- Keeps a saved copy of the app's own pages, CSS, JavaScript and icons for when the network is slow or down.
 - **Never** saves anything under `/api/` (logins, client codes, answers, results): no patient data is stored on the phone.
 - When offline, shows a banner and an offline page. Assessments still need a connection, because the model runs on the server.
 
@@ -141,3 +144,9 @@ When you change any frontend file, raise `CACHE_VERSION` in `frontend/sw.js` so 
 - The CHW who registered her sees her full name; the Administrator and other CHWs see **initials** ("M. W.").
 - Clients must be **18 or older**. Outside the national screening ages (25–65) the result shows a guideline
   notice; the risk level itself is not changed.
+- **Client records:** a CHW can open only the clients she registered (**My Clients**): her details and all her visits.
+  She can correct the details, or **remove** name, phone and village if the client withdraws consent; the client
+  code, date of birth and results are kept.
+- **Identity access log:** every time full details are shown on a client record, corrected or removed, the system
+  records who did it and when (field names only, never the values). The Administrator sees this log on the client
+  record.

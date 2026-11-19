@@ -7,6 +7,7 @@
 
 CREATE TYPE user_role  AS ENUM ('ADMIN', 'CHW');
 CREATE TYPE risk_level AS ENUM ('LOW', 'MODERATE', 'HIGH');
+CREATE TYPE identity_action AS ENUM ('VIEW', 'UPDATE', 'REMOVE');
 
 -- ------------------------------------------------------------
 -- 1. USERS: Administrators and CHWs (accounts created by Admin)
@@ -57,6 +58,20 @@ CREATE TABLE client_identities (
     consent_recorded_at  TIMESTAMP,
     updated_at           TIMESTAMP  NOT NULL DEFAULT NOW(),
     details_removed_at   TIMESTAMP                            -- set if she later withdraws identity consent
+);
+
+-- ------------------------------------------------------------
+-- 2c. IDENTITY_ACCESS_LOG: who opened, corrected or removed a
+--     client's personal details, and when. Records the action and
+--     the names of the fields changed, never the values.
+-- ------------------------------------------------------------
+CREATE TABLE identity_access_log (
+    log_id       SERIAL           PRIMARY KEY,
+    client_id    INTEGER          NOT NULL REFERENCES client_identities(client_id),
+    user_id      INTEGER          NOT NULL REFERENCES users(user_id),
+    action       identity_action  NOT NULL,
+    detail       VARCHAR(200),                                -- e.g. 'phone, village'
+    accessed_at  TIMESTAMP        NOT NULL DEFAULT NOW()
 );
 
 -- ------------------------------------------------------------
@@ -115,3 +130,4 @@ CREATE TABLE explanation_factors (
 CREATE INDEX idx_assessments_chw    ON assessments(chw_id);
 CREATE INDEX idx_assessments_client ON assessments(client_id);
 CREATE INDEX idx_predictions_level  ON predictions(risk_level);
+CREATE INDEX idx_access_log_client  ON identity_access_log(client_id);

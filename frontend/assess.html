@@ -182,6 +182,9 @@ if (requireLogin("CHW")) {
     try { setClient(await api("GET", `/api/clients/${encodeURIComponent(code)}`), false); }
     catch (err) { clientCode = null; found.classList.add("hidden"); showMessage(msg1, err.message); updateContinue(); }
   };
+  // Opened from a client's record ("New Assessment for this Client"): look her up straight away.
+  const fromRecord = new URLSearchParams(location.search).get("code");
+  if (fromRecord) { document.getElementById("code").value = fromRecord; document.getElementById("search").click(); }
   // ----- registration form -----
   const reg = document.getElementById("register"), dob = document.getElementById("dob");
   const dobUnknown = document.getElementById("dobUnknown"), idConsent = document.getElementById("idConsent");

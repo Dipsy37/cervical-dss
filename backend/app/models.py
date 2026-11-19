@@ -30,6 +30,12 @@ class RiskLevel(str, enum.Enum):
     HIGH = "HIGH"
 
 
+class IdentityAction(str, enum.Enum):
+    VIEW = "VIEW"        # a client's full personal details were shown
+    UPDATE = "UPDATE"    # personal details were corrected
+    REMOVE = "REMOVE"    # identity consent withdrawn: name, phone and village deleted
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -85,11 +91,30 @@ class ClientIdentity(Base):
     details_removed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
     client: Mapped[Client] = relationship(back_populates="identity")
+    access_log: Mapped[list["IdentityAccessLog"]] = relationship(
+        back_populates="identity", order_by="IdentityAccessLog.log_id.desc()",
+        cascade="all, delete-orphan")
 
     def age_on(self, day: date) -> int:
         """Age in completed years on the given day."""
         dob = self.date_of_birth
         return day.year - dob.year - ((day.month, day.day) < (dob.month, dob.day))
+
+
+class IdentityAccessLog(Base):
+    """Audit trail: who saw or changed a client's personal details, and when.
+    Records the action and the names of the fields changed, never the values themselves."""
+    __tablename__ = "identity_access_log"
+
+    log_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    client_id: Mapped[int] = mapped_column(ForeignKey("client_identities.client_id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), nullable=False)
+    action: Mapped[IdentityAction] = mapped_column(Enum(IdentityAction, name="identity_action"), nullable=False)
+    detail: Mapped[str | None] = mapped_column(String(200))     # e.g. "phone, village"
+    accessed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+    identity: Mapped[ClientIdentity] = relationship(back_populates="access_log")
+    user: Mapped[User] = relationship()
 
 
 class RiskAssessment(Base):
