@@ -38,6 +38,7 @@
     <p class="disclaimer" id="disclaimer"></p>
     <div class="actions">
       <a class="button" id="again" href="assess.html">New Assessment</a>
+      <a class="button secondary hidden" id="record" href="clients.html">Client Record</a>
       <a class="button secondary" id="home" href="chw.html">Back to Home</a>
     </div>
     <p class="muted" style="margin-top:1rem">Model version: <span id="version"></span></p>
@@ -57,6 +58,8 @@ if (requireLogin()) {
       `Client ${clientLabel(r)}` + (r.age != null ? `, ${r.age} years${r.age_estimated ? " (approx.)" : ""}` : "") + " · " +
       `assessed ${formatDate(r.assessed_at)} by ${r.chw_name}`;
     if (r.guideline_notice) showMessage(document.getElementById("notice"), r.guideline_notice, "info");
+    const rec = document.getElementById("record");
+    rec.href = `client.html?code=${encodeURIComponent(r.client_code)}`; rec.classList.remove("hidden");
     document.getElementById("banner").classList.add(r.risk_level);
     document.getElementById("level").textContent = r.risk_level;
     document.getElementById("prob").textContent = r.probability.toFixed(2);

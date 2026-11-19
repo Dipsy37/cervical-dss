@@ -12,12 +12,12 @@
  *
  * When you change any frontend file, still raise CACHE_VERSION so the offline copy is refreshed too.
  */
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const CACHE = `cdss-shell-${CACHE_VERSION}`;
 
 const APP_SHELL = [
   "/", "/index.html", "/change-password.html",
-  "/chw.html", "/assess.html", "/result.html", "/history.html",
+  "/chw.html", "/assess.html", "/result.html", "/history.html", "/clients.html", "/client.html",
   "/dashboard.html", "/admin.html", "/admin-assessments.html",
   "/offline.html",
   "/css/style.css", "/js/api.js", "/js/dashboard.js", "/js/pwa.js",
