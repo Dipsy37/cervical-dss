@@ -35,15 +35,15 @@ def test_service_worker_fetches_fresh_code_first(client):
 
 def test_offline_page_and_pages_link_manifest(client):
     assert client.get("/offline.html").status_code == 200
-    for page in ["index.html", "chw.html", "assess.html", "result.html", "history.html",
-                 "dashboard.html", "admin.html", "admin-assessments.html", "change-password.html"]:
+    for page in ["index.html", "chw.html", "assess.html", "result.html", "history.html", "clients.html",
+                 "client.html", "dashboard.html", "admin.html", "admin-assessments.html", "change-password.html"]:
         html = client.get(f"/{page}").text
         assert 'rel="manifest"' in html and "js/pwa.js" in html, page
 
 
 def test_iphone_support(client):
-    for page in ["index.html", "chw.html", "assess.html", "result.html", "history.html",
-                 "dashboard.html", "admin.html", "admin-assessments.html", "change-password.html",
+    for page in ["index.html", "chw.html", "assess.html", "result.html", "history.html", "clients.html",
+                 "client.html", "dashboard.html", "admin.html", "admin-assessments.html", "change-password.html",
                  "offline.html"]:
         html = client.get(f"/{page}").text
         assert 'name="apple-mobile-web-app-title" content="CC Risk"' in html, page
