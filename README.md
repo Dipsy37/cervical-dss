@@ -22,9 +22,12 @@ cervical-dss/
 │   │   ├── models.py         all 5 tables (users, clients, assessments, predictions, explanation_factors)
 │   │   ├── schemas.py        request validation (Pydantic)
 │   │   ├── security.py       bcrypt passwords, JWT login, role checks
+│   │   ├── crypto.py         encryption of client personal details (name, phone, village, date of birth)
+│   │   ├── services/         assessment_service.py (risk assessment), client_service.py (registration, who sees names)
 │   │   └── routers/          auth.py (login), users.py (CHW accounts), dashboard.py
 │   ├── init_db.py            creates the tables + first Administrator
-│   └── tests/                12 automated tests
+│   ├── migrate_client_identity.py   upgrades a database created before client names / dates of birth
+│   └── tests/                33 automated tests
 ├── frontend/                 login, set password, admin dashboard, CHW accounts, CHW dashboard
 ├── database/schema.sql       the database schema as SQL
 └── requirements.txt
@@ -58,11 +61,22 @@ Create an empty PostgreSQL database called `cervical_dss` (pgAdmin → Databases
 ```
 cp .env.example .env        # PowerShell: copy .env.example .env
 ```
-Edit `backend/.env`: put your postgres password in `DATABASE_URL` and a random `SECRET_KEY`. Then:
+Edit `backend/.env`: put your postgres password in `DATABASE_URL` and a random `SECRET_KEY`.
+Add an `ENCRYPTION_KEY` generated with:
+```
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+It encrypts client names, phone numbers, villages and dates of birth. **Never change or lose it** once
+clients are registered (their details could no longer be read); keep a copy outside the project. Then:
 ```
 python init_db.py
 ```
 Note the **admin username and temporary password** it prints.
+
+Database created **before** client names and dates of birth were added? Upgrade it once (keeps all data):
+```
+python migrate_client_identity.py
+```
 
 ## 4. Run
 
@@ -76,8 +90,9 @@ API documentation: http://localhost:8000/docs
 
 ## 5. Test
 
-From `backend/` (after training): `pytest -v` → 12 tests: login, forced password change, CHW account
-management, access control and dashboard.
+From `backend/` (after training): `pytest -v` → 33 tests: login, forced password change, CHW account
+management, client registration (date of birth, 18+ rule, identity consent, encryption, who sees names),
+risk assessment inputs, age from date of birth, access control, dashboard and the installable app (PWA).
 
 ## 6. Git
 
@@ -114,3 +129,15 @@ What the service worker (`frontend/sw.js`) does:
 - When offline, shows a banner and an offline page. Assessments still need a connection, because the model runs on the server.
 
 When you change any frontend file, raise `CACHE_VERSION` in `frontend/sw.js` so installed phones pick up the update.
+
+## Client privacy (Kenya Data Protection Act 2019)
+
+- Health data is linked to a client **code** only (e.g. CL-00042). Her personal details live in a separate
+  table, `client_identities`, and are **encrypted**; pgAdmin shows them as unreadable text.
+- **Date of birth is required** (or an approximate age if she does not know it). Age is calculated from it
+  on the day of each visit, so it is never typed in and stays correct on return visits.
+- **Name, phone and village are optional** and saved only with her **separate identity consent**.
+  No national ID number is collected.
+- The CHW who registered her sees her full name; the Administrator and other CHWs see **initials** ("M. W.").
+- Clients must be **18 or older**. Outside the national screening ages (25–65) the result shows a guideline
+  notice; the risk level itself is not changed.
