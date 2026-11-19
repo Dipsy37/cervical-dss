@@ -95,3 +95,22 @@ git remote add origin https://github.com/<your-username>/cervical-dss.git
 git push -u origin main
 ```
 `.gitignore` keeps out `.venv`, `backend/.env` (passwords) and test databases.
+
+## 7. Install on a phone (Progressive Web App)
+
+The web app can be installed on a CHW's smartphone like an app (home-screen icon, opens full-screen).
+No app store is needed and the code is the same as the web version.
+
+- **Android (Chrome):** open the site, then tap **Install app on this phone** on the login page
+  (or Chrome menu > **Add to Home screen**).
+- **iPhone (Safari):** Share > **Add to Home Screen**.
+
+Installing needs the site to be served over **HTTPS** (or `localhost` on the same computer).
+To try it on a phone during development, use an HTTPS tunnel such as `ngrok http 8000`, or deploy the app.
+
+What the service worker (`frontend/sw.js`) does:
+- Saves the app's own pages, CSS, JavaScript and icons so screens open quickly on a slow network.
+- **Never** saves anything under `/api/` (logins, client codes, answers, results): no patient data is stored on the phone.
+- When offline, shows a banner and an offline page. Assessments still need a connection, because the model runs on the server.
+
+When you change any frontend file, raise `CACHE_VERSION` in `frontend/sw.js` so installed phones pick up the update.
