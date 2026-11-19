@@ -114,6 +114,7 @@ class SHAPExplainer:
             factors.append(Factor(name, shown, round(sv, 4), rank, self.to_plain_language(name, shown, sv)))
         return factors
 
+SCREENING_AGE_MIN, SCREENING_AGE_MAX = 25, 65
 
 class ReferralRuleEngine:
     """Business rule: probability -> LOW / MODERATE / HIGH -> referral message."""
@@ -132,6 +133,15 @@ class ReferralRuleEngine:
     def get_referral(self, level: str) -> str:
         return self._messages[level]
 
+    def get_age_notice(self, age: int | None) -> str | None:
+        """Kenya's national guidelines screen women aged 25-65. Outside that range the CHW is
+        reminded to follow facility guidance; the risk level itself is not changed."""
+        if age is None or SCREENING_AGE_MIN <= age <= SCREENING_AGE_MAX:
+            return None
+        side = "Below" if age < SCREENING_AGE_MIN else "Above"
+        return (f"{side} the national screening age range ({SCREENING_AGE_MIN}\u2013{SCREENING_AGE_MAX} years). "
+                "Refer according to facility guidance.")       
+    
     def get_low_threshold(self) -> float:
         return self._low
 

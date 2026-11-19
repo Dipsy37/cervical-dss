@@ -19,7 +19,8 @@
 <main>
   <div class="card">
     <h1>All Assessment Records</h1>
-    <p class="muted">Audit trail of every risk assessment, with the model version that produced it.</p>
+    <p class="muted">Audit trail of every risk assessment, with the model version that produced it.
+      Client names are shown as initials to protect privacy.</p>
     <form id="filters" class="filters">
       <div><label for="chw">CHW</label><select id="chw"><option value="">All CHWs</option></select></div>
       <div><label for="chu">CHU</label><input id="chu" type="text" placeholder="All units"></div>
@@ -67,7 +68,7 @@ if (requireLogin("ADMIN")) {
       for (const r of rows) {
         const tr = document.createElement("tr"), a = document.createElement("a");
         a.href = `result.html?id=${r.assessment_id}`; a.textContent = "View";
-        tr.append(cell(formatDate(r.assessed_at)), cell(r.client_code), cell(r.chw_name), cell(r.chu_name),
+        tr.append(cell(formatDate(r.assessed_at)), cell(clientLabel(r)), cell(r.chw_name), cell(r.chu_name),
                   cell(badge(r.risk_level)), cell(a));
         body.appendChild(tr);
       }

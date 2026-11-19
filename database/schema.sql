@@ -28,8 +28,9 @@ CREATE TABLE users (
 );
 
 -- ------------------------------------------------------------
--- 2. CLIENTS: pseudonymous record of each woman assessed
---    (no name, phone, national ID or GPS location stored)
+-- 2. CLIENTS: pseudonymous record of each woman assessed.
+--    Health data links to client_id only; who she is lives in
+--    client_identities (encrypted), never in this table.
 -- ------------------------------------------------------------
 CREATE TABLE clients (
     client_id      SERIAL        PRIMARY KEY,
@@ -37,6 +38,25 @@ CREATE TABLE clients (
     chu_name       VARCHAR(100)  NOT NULL,
     registered_by  INTEGER       NOT NULL REFERENCES users(user_id),
     created_at     TIMESTAMP     NOT NULL DEFAULT NOW()
+);
+
+-- ------------------------------------------------------------
+-- 2b. CLIENT_IDENTITIES: personal details, one row per client (1:1).
+--     Every personal field is ENCRYPTED by the application (Fernet)
+--     before it is saved, so it is stored as TEXT and is unreadable
+--     in pgAdmin or a backup. No national ID number is collected.
+-- ------------------------------------------------------------
+CREATE TABLE client_identities (
+    client_id            INTEGER    PRIMARY KEY REFERENCES clients(client_id),
+    full_name            TEXT,                                -- encrypted; optional, needs identity consent
+    phone                TEXT,                                -- encrypted; optional, needs identity consent
+    village              TEXT,                                -- encrypted; optional, needs identity consent
+    date_of_birth        TEXT       NOT NULL,                 -- encrypted; age is calculated from it
+    dob_estimated        BOOLEAN    NOT NULL DEFAULT FALSE,   -- TRUE = only an approximate age was known
+    identity_consent     BOOLEAN    NOT NULL DEFAULT FALSE,   -- separate from consent to the assessment
+    consent_recorded_at  TIMESTAMP,
+    updated_at           TIMESTAMP  NOT NULL DEFAULT NOW(),
+    details_removed_at   TIMESTAMP                            -- set if she later withdraws identity consent
 );
 
 -- ------------------------------------------------------------
@@ -49,7 +69,7 @@ CREATE TABLE assessments (
     chw_id                        INTEGER      NOT NULL REFERENCES users(user_id),
     assessed_at                   TIMESTAMP    NOT NULL DEFAULT NOW(),
     consent_obtained              BOOLEAN      NOT NULL CHECK (consent_obtained = TRUE),
-    age                           SMALLINT     CHECK (age BETWEEN 13 AND 100),
+    age                           SMALLINT     CHECK (age BETWEEN 18 AND 100),  -- from date of birth, on the visit day
     num_sexual_partners           SMALLINT     CHECK (num_sexual_partners >= 0),
     age_first_intercourse         SMALLINT     CHECK (age_first_intercourse BETWEEN 8 AND 60),
     num_pregnancies               SMALLINT     CHECK (num_pregnancies >= 0),
@@ -73,6 +93,7 @@ CREATE TABLE predictions (
     risk_level        risk_level    NOT NULL,
     referral_message  TEXT          NOT NULL,
     model_version     VARCHAR(20)   NOT NULL,                 -- audit: which model produced this
+    guideline_notice  TEXT,                                   -- e.g. age outside screening range 25-65
     created_at        TIMESTAMP     NOT NULL DEFAULT NOW()
 );
 

@@ -99,3 +99,9 @@ function cell(content) {
   if (content instanceof Node) td.appendChild(content); else td.textContent = content ?? "";
   return td;
 }
+
+// "Mary Wanjiru (CL-00042)", or just "CL-00042" when no name was recorded.
+// The server decides whether the name is shown in full or as initials.
+function clientLabel(r) {
+  return r.client_name ? `${r.client_name} (${r.client_code})` : r.client_code;
+}

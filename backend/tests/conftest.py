@@ -9,10 +9,13 @@ from pathlib import Path
 
 TEST_DB = Path(__file__).parent / "test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB}"
+os.environ["ENCRYPTION_KEY"] = "dGVzdC1rZXktdGVzdC1rZXktdGVzdC1rZXktMzJieXQ="   # test-only key
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+
+from datetime import date  # noqa: E402
 
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
@@ -70,8 +73,28 @@ def other_chw(client, admin_token):
     return create_chw(client, admin_token, "Peter Otieno", "0723456789", chu="Kisumu Central")
 
 
+# Age is no longer an answer: it comes from the client's date of birth.
 VALID_ANSWERS = {
-    "consent_obtained": True, "age": 34, "num_sexual_partners": 3, "age_first_intercourse": 17,
+    "consent_obtained": True, "num_sexual_partners": 3, "age_first_intercourse": 17,
     "num_pregnancies": 4, "smokes": False, "smokes_years": None, "hormonal_contraceptives": True,
     "hormonal_contraceptives_years": 3, "iud": False, "iud_years": None, "stds": True, "stds_number": 1,
 }
+
+
+def years_ago(years: int, days: int = 0) -> str:
+    """Date of birth that makes a client exactly `years` old today (minus `days` days)."""
+    from datetime import timedelta
+    today = date.today()
+    try:
+        d = today.replace(year=today.year - years)
+    except ValueError:                       # 29 February
+        d = today.replace(year=today.year - years, day=28)
+    return (d - timedelta(days=days)).isoformat() if days else d.isoformat()
+
+
+def register_client(client, token, age=34, **details):
+    """Register a client aged `age` today. Returns the response JSON."""
+    body = {"date_of_birth": years_ago(age)} | details
+    r = client.post("/api/clients", headers=auth(token), json=body)
+    assert r.status_code == 201, r.text
+    return r.json()

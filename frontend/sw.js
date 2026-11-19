@@ -8,7 +8,7 @@
  *
  * When you change any frontend file, raise CACHE_VERSION so phones pick up the new version.
  */
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE = `cdss-shell-${CACHE_VERSION}`;
 
 const APP_SHELL = [
