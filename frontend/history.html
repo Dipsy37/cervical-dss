@@ -30,8 +30,7 @@
     <div id="msg" class="hidden"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Date</th><th>Client code</th><th>Risk level</th><th></th></tr></thead>
-        <tbody id="rows"></tbody>
+        <thead><tr><th>Date</th><th>Client</th><th>Risk level</th><th></th></tr></thead>
       </table>
     </div>
     <p id="empty" class="muted hidden">No assessments found.</p>
@@ -57,7 +56,7 @@ if (requireLogin("CHW")) {
       for (const r of rows) {
         const tr = document.createElement("tr"), a = document.createElement("a");
         a.href = `result.html?id=${r.assessment_id}`; a.textContent = "View";
-        tr.append(cell(formatDate(r.assessed_at)), cell(r.client_code), cell(badge(r.risk_level)), cell(a));
+        tr.append(cell(formatDate(r.assessed_at)), cell(clientLabel(r)), cell(badge(r.risk_level)), cell(a));
         body.appendChild(tr);
       }
       document.getElementById("empty").classList.toggle("hidden", rows.length > 0);

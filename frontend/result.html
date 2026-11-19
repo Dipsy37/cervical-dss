@@ -28,6 +28,7 @@
     <div class="card">
       <h2 style="margin-top:0">Recommended action</h2>
       <p id="referral"></p>
+      <div id="notice" class="alert info hidden"></div>
     </div>
     <div class="card">
       <h2 style="margin-top:0">Why this result?</h2>
@@ -53,7 +54,9 @@ if (requireLogin()) {
   const id = new URLSearchParams(location.search).get("id");
   api("GET", `/api/assessments/${encodeURIComponent(id)}`).then(r => {
     document.getElementById("meta").textContent =
-      `Client ${r.client_code} · assessed ${formatDate(r.assessed_at)} by ${r.chw_name}`;
+      `Client ${clientLabel(r)}` + (r.age != null ? `, ${r.age} years${r.age_estimated ? " (approx.)" : ""}` : "") + " · " +
+      `assessed ${formatDate(r.assessed_at)} by ${r.chw_name}`;
+    if (r.guideline_notice) showMessage(document.getElementById("notice"), r.guideline_notice, "info");
     document.getElementById("banner").classList.add(r.risk_level);
     document.getElementById("level").textContent = r.risk_level;
     document.getElementById("prob").textContent = r.probability.toFixed(2);
