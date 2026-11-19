@@ -32,3 +32,12 @@ def test_offline_page_and_pages_link_manifest(client):
                  "dashboard.html", "admin.html", "admin-assessments.html", "change-password.html"]:
         html = client.get(f"/{page}").text
         assert 'rel="manifest"' in html and "js/pwa.js" in html, page
+def test_iphone_support(client):
+    for page in ["index.html", "chw.html", "assess.html", "result.html", "history.html",
+                 "dashboard.html", "admin.html", "admin-assessments.html", "change-password.html",
+                 "offline.html"]:
+        html = client.get(f"/{page}").text
+        assert 'name="apple-mobile-web-app-title" content="CC Risk"' in html, page
+        assert 'rel="apple-touch-icon"' in html or page == "offline.html", page
+    assert 'id="iosInstallHint"' in client.get("/index.html").text
+    assert "iosInstallHint" in client.get("/js/pwa.js").text

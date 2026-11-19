@@ -43,4 +43,14 @@
     const btn = document.getElementById("installApp");
     if (btn) btn.classList.add("hidden");
   });
+  // iPhone / iPad: Apple does not allow an install button, so show how to add it from the Share menu.
+  document.addEventListener("DOMContentLoaded", () => {
+    const hint = document.getElementById("iosInstallHint");
+    if (!hint) return;
+    const ua = navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/.test(ua) || (ua.includes("Macintosh") && navigator.maxTouchPoints > 1);
+    const installed = window.navigator.standalone === true
+      || window.matchMedia("(display-mode: standalone)").matches;
+    if (isIOS && !installed) hint.classList.remove("hidden");
+  });
 })();
