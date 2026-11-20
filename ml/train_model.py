@@ -3,7 +3,7 @@ OFFLINE MODEL DEVELOPMENT  (Phase 1 - training)
 ================================================
 Follows the Machine Learning Pipeline figure step by step:
 
-  1. Data acquisition          6. Train + tune XGBoost, Random Forest, Logistic Regression
+  1. Data acquisition + cleaning 6. Train + tune XGBoost, Random Forest, Logistic Regression
   2. Feature selection         7. Evaluate on the held-out test set (used once)
   3. Stratified train/test     8. Choose LOW / MODERATE / HIGH cut-offs (t1, t2)
   4. Preprocessing (train)     9. SHAP explainability
@@ -41,6 +41,9 @@ from sklearn.metrics import (
     roc_curve,
 )
 from sklearn.base import clone
+from sklearn.calibration import calibration_curve
+from sklearn.feature_selection import f_classif, mutual_info_classif
+from sklearn.metrics import average_precision_score, brier_score_loss, classification_report, precision_recall_curve
 from sklearn.model_selection import (GridSearchCV, RepeatedStratifiedKFold, StratifiedKFold, cross_val_predict,
                                      cross_val_score, train_test_split)
 from sklearn.pipeline import Pipeline
@@ -90,6 +93,27 @@ missing = [c for c in list(FEATURE_MAP) + [TARGET] if c not in raw.columns]
 if missing:
     sys.exit(f"These expected columns are missing from the CSV: {missing}")
 
+# %% 1b. Data cleaning
+#   (i)  exact duplicate rows are removed, so the same woman cannot appear in both the training
+#        and the test set (which would make the test results look better than they are);
+#   (ii) records with impossible answers are removed: age at first sexual intercourse greater than
+#        current age (the web application rejects the same combination, see test TC17).
+n_raw = len(raw)
+duplicates = int(raw.duplicated().sum())
+raw = raw.drop_duplicates().reset_index(drop=True)
+impossible = raw["First sexual intercourse"] > raw["Age"]
+n_impossible = int(impossible.sum())
+raw = raw[~impossible].reset_index(drop=True)
+cleaning = pd.DataFrame([
+    {"step": "Records loaded", "records": n_raw, "positives": None},
+    {"step": "Exact duplicate rows removed", "records": -duplicates, "positives": None},
+    {"step": "Removed: age at first intercourse > current age", "records": -n_impossible, "positives": None},
+    {"step": "Records used for modelling", "records": len(raw), "positives": int(raw[TARGET].sum())},
+])
+cleaning.to_csv(REPORTS / "data_cleaning.csv", index=False)
+print(f"Cleaning: {n_raw} records -> removed {duplicates} duplicates and {n_impossible} impossible "
+      f"-> {len(raw)} records ({int(raw[TARGET].sum())} positive)")
+
 # %% 2. Feature selection
 roles = []
 for col in raw.columns:
@@ -114,6 +138,22 @@ print(f"Positive (Biopsy = 1): {y.sum()} of {len(y)} ({y.mean():.1%})")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=TEST_SIZE, stratify=y, random_state=RANDOM_STATE)
 print(f"Train: {len(X_train)} ({y_train.sum()} positive) | Test: {len(X_test)} ({y_test.sum()} positive)")
+
+# %% 3b. Statistical check of the selected features (training data only)
+# The 12 features were chosen on domain grounds (collectable by a CHW, no leakage). These tests
+# show how strongly each one is related to the biopsy result on its own:
+#   ANOVA F-test: does the feature's mean differ between positive and negative cases? (p < 0.05 = yes)
+#   Mutual information: how much knowing the feature reduces uncertainty about the result (0 = none);
+#   it also picks up non-linear relationships that the F-test misses.
+# Missing values are filled with the training median for this check only.
+X_train_filled = X_train.fillna(X_train.median())
+f_stat, f_p = f_classif(X_train_filled, y_train)
+mi = mutual_info_classif(X_train_filled, y_train, random_state=RANDOM_STATE)
+feature_stats = (pd.DataFrame({"feature": [PLAIN_LABELS[f] for f in FEATURES], "ANOVA_F": f_stat,
+                               "p_value": f_p, "mutual_information": mi})
+                 .sort_values("ANOVA_F", ascending=False).round(4))
+feature_stats.to_csv(REPORTS / "feature_statistics.csv", index=False)
+print("\nStatistical check of the selected features (training set):\n", feature_stats.to_string(index=False))
 
 
 # %% 4 + 5. Preprocessing and SMOTE live INSIDE the pipeline, so during cross-validation
@@ -226,6 +266,52 @@ fig.tight_layout()
 fig.savefig(REPORTS / "confusion_matrices.png", dpi=200)
 plt.close(fig)
 
+# Precision-recall curves: more informative than ROC when positives are rare (6.5% here).
+# Average precision (AP) summarises each curve; a model that guesses scores about the positive rate.
+fig, ax = plt.subplots(figsize=(6, 5))
+for name, prob in test_probs.items():
+    prec, rec, _ = precision_recall_curve(y_test, prob)
+    ax.plot(rec, prec, label=f"{name} (AP = {average_precision_score(y_test, prob):.3f})")
+ax.axhline(y_test.mean(), color="k", linestyle="--", linewidth=1, label=f"Chance ({y_test.mean():.3f})")
+ax.set_xlabel("Recall (sensitivity)")
+ax.set_ylabel("Precision")
+ax.set_title("Precision-recall curves on the test set")
+ax.legend(loc="upper right")
+fig.tight_layout()
+fig.savefig(REPORTS / "pr_curves.png", dpi=200)
+plt.close(fig)
+
+# Calibration curves: do predicted probabilities match observed positive rates?
+# Few positive cases, so 5 bins with equal numbers of women (quantile strategy).
+# Brier score = mean squared error of the probabilities (lower is better).
+fig, ax = plt.subplots(figsize=(6, 5))
+for name, prob in test_probs.items():
+    frac_pos, mean_pred = calibration_curve(y_test, prob, n_bins=5, strategy="quantile")
+    ax.plot(mean_pred, frac_pos, marker="o", label=f"{name} (Brier = {brier_score_loss(y_test, prob):.3f})")
+ax.plot([0, 1], [0, 1], "k--", linewidth=1, label="Perfectly calibrated")
+ax.set_xlabel("Mean predicted probability")
+ax.set_ylabel("Observed fraction positive")
+ax.set_title("Calibration curves on the test set")
+ax.legend(loc="upper left")
+fig.tight_layout()
+fig.savefig(REPORTS / "calibration_curves.png", dpi=200)
+plt.close(fig)
+
+pr_cal = pd.DataFrame([{"Model": name, "Average precision (PR-AUC)": average_precision_score(y_test, prob),
+                        "Brier score": brier_score_loss(y_test, prob),
+                        "Mean predicted probability": prob.mean(), "Observed positive rate": y_test.mean()}
+                       for name, prob in test_probs.items()]).round(3)
+pr_cal.to_csv(REPORTS / "pr_and_calibration.csv", index=False)
+print("\nPrecision-recall and calibration:\n", pr_cal.to_string(index=False))
+
+# Per-class report for each model at the default 0.5 threshold
+with open(REPORTS / "classification_report.txt", "w") as fh:
+    for name, prob in test_probs.items():
+        fh.write(f"{name} (threshold 0.5)\n")
+        fh.write(classification_report(y_test, (prob >= 0.5).astype(int), target_names=["Negative", "Positive"],
+                                       zero_division=0, digits=3))
+        fh.write("\n")
+
 # %% 7b. Robustness checks (the test set has very few positive cases, so one split is noisy)
 #   (i)  95% bootstrap confidence interval for each model's test AUC
 #   (ii) repeated stratified cross-validation on ALL data with each model's tuned settings
@@ -316,6 +402,8 @@ config = {
     "referral_messages": REFERRAL_MESSAGES,
     "top_k_factors": 3,
     "training_records": int(len(X_train)),
+    "data_cleaning": {"records_loaded": n_raw, "duplicates_removed": duplicates,
+                      "impossible_removed": n_impossible, "records_used": int(len(raw))},
     "imbalance_method": "SMOTE" if best_xgb.named_steps["smote"] != "passthrough" else "class weighting (scale_pos_weight)",
     "test_metrics_default_threshold": {k: round(float(v), 4) for k, v in
                                        comparison.set_index("Model").loc["XGBoost"].items()},

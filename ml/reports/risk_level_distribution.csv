@@ -1,4 +1,4 @@
 level,cases,positives,positive_rate
-LOW,16,1,0.062
-MODERATE,130,4,0.031
-HIGH,26,6,0.231
+LOW,8,1,0.125
+MODERATE,137,7,0.051
+HIGH,22,3,0.136

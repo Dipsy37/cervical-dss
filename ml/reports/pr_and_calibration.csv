@@ -1,0 +1,4 @@
+Model,Average precision (PR-AUC),Brier score,Mean predicted probability,Observed positive rate
+XGBoost,0.124,0.21,0.441,0.066
+Random Forest,0.173,0.085,0.175,0.066
+Logistic Regression,0.107,0.235,0.474,0.066

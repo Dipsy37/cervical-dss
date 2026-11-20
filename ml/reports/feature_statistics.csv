@@ -1,0 +1,13 @@
+feature,ANOVA_F,p_value,mutual_information
+History of a sexually transmitted infection,11.1292,0.0009,0.0184
+Number of sexually transmitted infections,6.6712,0.01,0.0074
+Years of hormonal contraceptive use,6.6258,0.0103,0.0087
+Has an IUD,2.6475,0.1042,0.0
+Years with an IUD,2.008,0.1569,0.0
+Years of smoking,1.6271,0.2026,0.0
+Age,1.2601,0.262,0.0035
+Number of sexual partners,1.0091,0.3155,0.0
+Number of pregnancies,0.7731,0.3796,0.0
+Smoking,0.0724,0.7879,0.0
+Age at first sexual intercourse,0.049,0.8249,0.0
+Use of hormonal contraceptives,0.0376,0.8464,0.009

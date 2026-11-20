@@ -1,32 +1,32 @@
 column,role,missing_values
 Age,Input feature,0
-Number of sexual partners,Input feature,26
+Number of sexual partners,Input feature,25
 First sexual intercourse,Input feature,7
-Num of pregnancies,Input feature,56
+Num of pregnancies,Input feature,55
 Smokes,Input feature,13
 Smokes (years),Input feature,13
 Smokes (packs/year),Excluded: sparse / not practical for CHW collection,13
-Hormonal Contraceptives,Input feature,108
-Hormonal Contraceptives (years),Input feature,108
-IUD,Input feature,117
-IUD (years),Input feature,117
-STDs,Input feature,105
-STDs (number),Input feature,105
-STDs:condylomatosis,Excluded: sparse / not practical for CHW collection,105
-STDs:cervical condylomatosis,Excluded: sparse / not practical for CHW collection,105
-STDs:vaginal condylomatosis,Excluded: sparse / not practical for CHW collection,105
-STDs:vulvo-perineal condylomatosis,Excluded: sparse / not practical for CHW collection,105
-STDs:syphilis,Excluded: sparse / not practical for CHW collection,105
-STDs:pelvic inflammatory disease,Excluded: sparse / not practical for CHW collection,105
-STDs:genital herpes,Excluded: sparse / not practical for CHW collection,105
-STDs:molluscum contagiosum,Excluded: sparse / not practical for CHW collection,105
-STDs:AIDS,Excluded: sparse / not practical for CHW collection,105
-STDs:HIV,Excluded: sparse / not practical for CHW collection,105
-STDs:Hepatitis B,Excluded: sparse / not practical for CHW collection,105
-STDs:HPV,Excluded: sparse / not practical for CHW collection,105
+Hormonal Contraceptives,Input feature,103
+Hormonal Contraceptives (years),Input feature,103
+IUD,Input feature,111
+IUD (years),Input feature,111
+STDs,Input feature,100
+STDs (number),Input feature,100
+STDs:condylomatosis,Excluded: sparse / not practical for CHW collection,100
+STDs:cervical condylomatosis,Excluded: sparse / not practical for CHW collection,100
+STDs:vaginal condylomatosis,Excluded: sparse / not practical for CHW collection,100
+STDs:vulvo-perineal condylomatosis,Excluded: sparse / not practical for CHW collection,100
+STDs:syphilis,Excluded: sparse / not practical for CHW collection,100
+STDs:pelvic inflammatory disease,Excluded: sparse / not practical for CHW collection,100
+STDs:genital herpes,Excluded: sparse / not practical for CHW collection,100
+STDs:molluscum contagiosum,Excluded: sparse / not practical for CHW collection,100
+STDs:AIDS,Excluded: sparse / not practical for CHW collection,100
+STDs:HIV,Excluded: sparse / not practical for CHW collection,100
+STDs:Hepatitis B,Excluded: sparse / not practical for CHW collection,100
+STDs:HPV,Excluded: sparse / not practical for CHW collection,100
 STDs: Number of diagnosis,Excluded: sparse / not practical for CHW collection,0
-STDs: Time since first diagnosis,Excluded: sparse / not practical for CHW collection,787
-STDs: Time since last diagnosis,Excluded: sparse / not practical for CHW collection,787
+STDs: Time since first diagnosis,Excluded: sparse / not practical for CHW collection,762
+STDs: Time since last diagnosis,Excluded: sparse / not practical for CHW collection,762
 Dx:Cancer,"Excluded: prior clinical diagnosis (leakage, not collectable by a CHW)",0
 Dx:CIN,"Excluded: prior clinical diagnosis (leakage, not collectable by a CHW)",0
 Dx:HPV,"Excluded: prior clinical diagnosis (leakage, not collectable by a CHW)",0

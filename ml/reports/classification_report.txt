@@ -1,0 +1,30 @@
+XGBoost (threshold 0.5)
+              precision    recall  f1-score   support
+
+    Negative      0.952     0.763     0.847       156
+    Positive      0.119     0.455     0.189        11
+
+    accuracy                          0.743       167
+   macro avg      0.536     0.609     0.518       167
+weighted avg      0.897     0.743     0.804       167
+
+Random Forest (threshold 0.5)
+              precision    recall  f1-score   support
+
+    Negative      0.938     0.962     0.949       156
+    Positive      0.143     0.091     0.111        11
+
+    accuracy                          0.904       167
+   macro avg      0.540     0.526     0.530       167
+weighted avg      0.885     0.904     0.894       167
+
+Logistic Regression (threshold 0.5)
+              precision    recall  f1-score   support
+
+    Negative      0.943     0.737     0.827       156
+    Positive      0.089     0.364     0.143        11
+
+    accuracy                          0.713       167
+   macro avg      0.516     0.550     0.485       167
+weighted avg      0.886     0.713     0.782       167
+

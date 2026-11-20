@@ -1,0 +1,5 @@
+step,records,positives
+Records loaded,858,
+Exact duplicate rows removed,-23,
+Removed: age at first intercourse > current age,-2,
+Records used for modelling,833,54.0
