@@ -55,10 +55,8 @@ function homeFor(role) { return role === "ADMIN" ? "dashboard.html" : "chw.html"
 
 function renderNav(active) {
   const links = Session.role === "ADMIN"
-    ? [["dashboard.html", "Dashboard"], ["admin.html", "CHW Accounts"], ["admin-assessments.html", "All Assessments"],
-       ["clients.html", "Clients"]]
-    : [["chw.html", "Dashboard"], ["assess.html", "New Assessment"], ["clients.html", "My Clients"],
-       ["history.html", "Assessment History"]];
+    ? [["dashboard.html", "Dashboard"], ["admin.html", "CHW Accounts"], ["admin-assessments.html", "All Assessments"]]
+    : [["chw.html", "Dashboard"], ["assess.html", "New Assessment"], ["history.html", "Assessment History"]];
   links.push(["change-password.html", "Change Password"]);
   const bar = document.createElement("header");
   bar.className = "topbar";
@@ -100,10 +98,4 @@ function cell(content) {
   const td = document.createElement("td");
   if (content instanceof Node) td.appendChild(content); else td.textContent = content ?? "";
   return td;
-}
-
-// "Mary Wanjiru (CL-00042)", or just "CL-00042" when no name was recorded.
-// The server decides whether the name is shown in full or as initials.
-function clientLabel(r) {
-  return r.client_name ? `${r.client_name} (${r.client_code})` : r.client_code;
 }

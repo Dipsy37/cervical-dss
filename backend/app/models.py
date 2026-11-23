@@ -7,7 +7,7 @@ column; read-only rules (e.g. a Prediction never changes once saved) are
 enforced in the service layer, which never updates those rows.
 """
 import enum
-from datetime import date, datetime
+from datetime import datetime
 
 from sqlalchemy import (
     Boolean, CheckConstraint, DateTime, Enum, ForeignKey, Integer, Numeric, SmallInteger,
@@ -15,7 +15,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .crypto import EncryptedDate, EncryptedString
 from .database import Base
 
 
@@ -28,12 +27,6 @@ class RiskLevel(str, enum.Enum):
     LOW = "LOW"
     MODERATE = "MODERATE"
     HIGH = "HIGH"
-
-
-class IdentityAction(str, enum.Enum):
-    VIEW = "VIEW"        # a client's full personal details were shown
-    UPDATE = "UPDATE"    # personal details were corrected
-    REMOVE = "REMOVE"    # identity consent withdrawn: name, phone and village deleted
 
 
 class User(Base):
@@ -57,8 +50,7 @@ class User(Base):
 
 
 class Client(Base):
-    """Pseudonymous record of a woman assessed. Her personal details are kept apart,
-    encrypted, in ClientIdentity, so health data never sits next to a name."""
+    """Pseudonymous record of a woman assessed: no name, phone, ID or location."""
     __tablename__ = "clients"
 
     client_id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -68,62 +60,14 @@ class Client(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
     assessments: Mapped[list["RiskAssessment"]] = relationship(back_populates="client")
-    identity: Mapped["ClientIdentity | None"] = relationship(
-        back_populates="client", uselist=False, cascade="all, delete-orphan")
-
-
-class ClientIdentity(Base):
-    """Who the client is. Every personal field is encrypted in the database.
-    Date of birth is required (age is calculated from it at each assessment);
-    name, phone and village are optional and saved only with the client's consent."""
-    __tablename__ = "client_identities"
-
-    client_id: Mapped[int] = mapped_column(ForeignKey("clients.client_id"), primary_key=True)
-    full_name: Mapped[str | None] = mapped_column(EncryptedString)
-    phone: Mapped[str | None] = mapped_column(EncryptedString)
-    village: Mapped[str | None] = mapped_column(EncryptedString)
-    date_of_birth: Mapped[date] = mapped_column(EncryptedDate, nullable=False)
-    dob_estimated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    identity_consent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    consent_recorded_at: Mapped[datetime | None] = mapped_column(DateTime)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
-    details_removed_at: Mapped[datetime | None] = mapped_column(DateTime)
-
-    client: Mapped[Client] = relationship(back_populates="identity")
-    access_log: Mapped[list["IdentityAccessLog"]] = relationship(
-        back_populates="identity", order_by="IdentityAccessLog.log_id.desc()",
-        cascade="all, delete-orphan")
-
-    def age_on(self, day: date) -> int:
-        """Age in completed years on the given day."""
-        dob = self.date_of_birth
-        return day.year - dob.year - ((day.month, day.day) < (dob.month, dob.day))
-
-
-class IdentityAccessLog(Base):
-    """Audit trail: who saw or changed a client's personal details, and when.
-    Records the action and the names of the fields changed, never the values themselves."""
-    __tablename__ = "identity_access_log"
-
-    log_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    client_id: Mapped[int] = mapped_column(ForeignKey("client_identities.client_id"), nullable=False, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), nullable=False)
-    action: Mapped[IdentityAction] = mapped_column(Enum(IdentityAction, name="identity_action"), nullable=False)
-    detail: Mapped[str | None] = mapped_column(String(200))     # e.g. "phone, village"
-    accessed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
-
-    identity: Mapped[ClientIdentity] = relationship(back_populates="access_log")
-    user: Mapped[User] = relationship()
 
 
 class RiskAssessment(Base):
-    """One visit. Holds the 12 model inputs; NULL = client declined / did not know.
-    Age is calculated from the client's date of birth on the day of the visit and stored here."""
+    """One visit. Holds the 12 model inputs; NULL = client declined / did not know."""
     __tablename__ = "assessments"
     __table_args__ = (
         CheckConstraint("consent_obtained = TRUE", name="ck_consent"),
-        CheckConstraint("age BETWEEN 18 AND 100", name="ck_age"),
+        CheckConstraint("age BETWEEN 13 AND 100", name="ck_age"),
         CheckConstraint("num_sexual_partners >= 0", name="ck_partners"),
         CheckConstraint("age_first_intercourse BETWEEN 8 AND 60", name="ck_first_intercourse"),
         CheckConstraint("num_pregnancies >= 0", name="ck_pregnancies"),
@@ -171,7 +115,6 @@ class Prediction(Base):
     risk_level: Mapped[RiskLevel] = mapped_column(Enum(RiskLevel, name="risk_level"), nullable=False, index=True)
     referral_message: Mapped[str] = mapped_column(Text, nullable=False)
     model_version: Mapped[str] = mapped_column(String(20), nullable=False)
-    guideline_notice: Mapped[str | None] = mapped_column(Text)   # e.g. outside screening age 25-65
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
     assessment: Mapped[RiskAssessment] = relationship(back_populates="prediction")
